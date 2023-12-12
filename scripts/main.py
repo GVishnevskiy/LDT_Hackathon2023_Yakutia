@@ -9,7 +9,8 @@ from config import VK_LOGIN, VK_PASSWORD
 
 MY_VK_ID = "56757868"
 OUTPUT_PATH = r"../output/"
-TOKEN = "vk1.a.3th8ECvivwyx86YdlsIL69Fdkj2vITUKzATtXJmip0or7v-NRFYdh9lYaPPTCzFH2nnL2RS0ldQMQpQgvCYEsIgYJnSgfNtpcTNrZ5d0rZoarIoWMVjfDt2Ingj2-hw-Y3eCACUFl51ivFSAY2AgV6wEAZXM1dT03WkotoX_pBAiDIZ_IZ0CTeWvXi17-CSpaOSPSRF4gsm_4afFkCIwFw&expires_in=86400"
+TOKEN = "vk1.a.4MKePfLZFVnD-fwRvphtzdNCfSsDLY3W6Z6It5gMsLIEE6H9fuSdTQ05otPsZWt_zS-LuG1WDOPXneyw2V_r_yV7gpSC23-Ubs9HFwMIFUzoKge2BB-YQ7dWOwwtfvy0oZ0qUDxcJok2SfrOTBclZt1dnI9364DfbL09Dbv9h5krE27ilgELg_ME_6whva39IBnZAbCD14ECC05vaqOwAA&expires_in=0&user_id=347307331"
+
 
 class AuthException(Exception):
     pass
@@ -74,11 +75,10 @@ class Database:
 
 
 class VkParser(AbstractParser):
-    def __init__(self, login, password):
-        vk_session = vk_api.VkApi(token=TOKEN, app_id=2685278)
+    def __init__(self, token, login=VK_LOGIN):
+        vk_session = vk_api.VkApi(login=login, token=token, app_id=2685278)
 
         vk_session.auth(token_only=True)
-
 
         self.vk = vk_session.get_api()
         self.users = {}
@@ -107,17 +107,17 @@ class VkParser(AbstractParser):
         return groups_description
 
     def _check_if_user_exists(self, vk_id):
-        try:
-            self.vk.users.get(user_ids=vk_id)
-        except Exception:
-            raise GetUserExeption()
+
+        self.vk.users.get(user_ids=vk_id)
+
 
 
 def main():
-    vk_parser = VkParser(login=VK_LOGIN, password=VK_PASSWORD)
+    db = Database(name="vk_users.db")
+
+    vk_parser = VkParser(token=TOKEN)
     data = vk_parser.parse_one(vk_id=MY_VK_ID)
 
-    #db = Database(name="vk_users.db")
 
 if __name__ == "__main__":
     main()
