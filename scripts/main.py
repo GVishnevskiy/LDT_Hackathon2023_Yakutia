@@ -5,6 +5,7 @@ import pprint
 import json
 import sqlite3
 import asyncio
+import typing
 
 from config import VK_LOGIN, VK_PASSWORD
 
@@ -27,11 +28,24 @@ class AbstractParser(ABC):
         ...
 
 
-class Writer:
-    @staticmethod
-    def json(data: dict, file_path="groups_discription.txt"):
-        with open(OUTPUT_PATH + file_path, 'a', encoding='utf8') as file:
-            json.dump(data, file, ensure_ascii=False, indent=4)
+class DBQueries:
+    add_vk_user = """
+    INSERT INTO 
+        vk_users (id)
+    VALUES 
+        ({0})
+    """
+
+    add_vk_group = """
+    INSERT INTO 
+        vk_groups (id, group_name, group_description)
+    VALUES 
+        {}
+    """
+
+    bind_user_group = """
+    
+    """
 
 
 class Database:
@@ -74,6 +88,42 @@ class Database:
         self.cursor.execute(sql, params or ())
         return self.fetchall()
 
+    def add_vk_user(self, user_id):
+        q = DBQueries.add_vk_user.format(user_id)
+        print(q)
+
+    def add_vk_groups(self, groups):
+        filler = ", ".join(["{}"] * len(groups))
+        q = DBQueries.add_vk_group.format(filler)
+
+        g = []
+        for group_id, group_info in groups.items():
+            g.append((group_id, group_info["name"], group_info["description"]))
+
+        print(q.format(*g))
+
+
+
+class Writer:
+    @staticmethod
+    def json(data: dict, file_path="groups_discription.txt"):
+        with open(OUTPUT_PATH + file_path, 'a', encoding='utf8') as file:
+            json.dump(data, file, ensure_ascii=False, indent=4)
+
+    @staticmethod
+    def db(data: typing.Dict[int, typing.Dict], db: Database):
+        for user_id, user_groups in data.items():
+            db.add_vk_user(int(user_id))
+
+            groups = Writer.clear_groups(user_groups)
+            db.add_vk_groups(groups)
+
+    @staticmethod
+    def clear_groups(user_groups):
+        g = []
+        for group_id, group_info in user_groups.items():
+            g.append((group_id, group_info["name"], group_info["description"]))
+        return g
 
 class VkParser(AbstractParser):
     def __init__(self, token, login=VK_LOGIN):
@@ -107,11 +157,13 @@ class VkParser(AbstractParser):
         except Exception:
             raise GetUserExeption()
 
+
 async def main():
     db = Database(name="vk_users.db")
 
     vk_parser = VkParser(token=TOKEN)
     data = await vk_parser.parse_one(vk_id=MY_VK_ID)
+    Writer.db(data=data, db=db)
 
 
 if __name__ == "__main__":
