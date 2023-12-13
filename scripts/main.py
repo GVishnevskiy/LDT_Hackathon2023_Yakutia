@@ -12,8 +12,8 @@ from config import VK_LOGIN, VK_PASSWORD
 MY_VK_ID = "347307331"
 OUTPUT_PATH = r"../output/"
 TOKEN = "vk1.a.eDiyffPjcbtyqySj_PULS_KtdvjjO1NmM9SRJq4G1r4kVMyQeIcYz72Ub0V1lFkwtZ1wMWv0m-j8mv-RQnzzYOKEB9JcIEwPCALIn3IUI6ft7ubFnaZXNw49byWT0ccN8PXmbu59FQ3_dH6xl9j44uLgoceNWHS5XIXxEQzGDSILTvR2Kf86mu7Qo3OfeRkTkpP3xwtVIUEfnpKEEKTHIw"
-GROUPS_LIMIT = 1
-NOTES_LIMIT = 1
+GROUPS_LIMIT = 2
+NOTES_LIMIT = 2
 
 
 class AuthException(Exception):
@@ -139,15 +139,20 @@ class VkParser(AbstractParser):
         groups_ids = await self._parse_one_person_groups(vk_id=vk_id)
         groups_discription = await self._get_groups_description(groups_ids)
 
-        return {vk_id: (groups_discription, user_notes)}
+        return {vk_id: {"groups": groups_discription, "notes": user_notes}}
 
     async def _parse_one_person_groups(self, vk_id):
         response = await self.vk.groups.get(user_id=vk_id)
         return response.items[0:GROUPS_LIMIT]
 
     async def _parse_one_person_notes(self, vk_id):
-        response = await self.vk.fave.get()
-        return response.items[0:NOTES_LIMIT]
+        response = await self.vk.fave.get(item_type='post', count=NOTES_LIMIT)
+        notes = {}
+        for note in response.items:
+            id = note.post.id
+            text = note.post.text
+            notes[id] = text
+        return notes
 
     async def _get_groups_description(self, groups_ids: []):
         response = await self.vk.groups.get_by_id(group_ids=groups_ids, fields=["name", "description"])
@@ -172,6 +177,7 @@ async def main():
     vk_parser = VkParser(token=TOKEN)
     data = await vk_parser.parse_one(vk_id=MY_VK_ID)
     print(data)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
