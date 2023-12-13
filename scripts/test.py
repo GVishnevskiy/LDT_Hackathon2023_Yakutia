@@ -25,3 +25,10 @@ insert_query = (
 )
 
 print(insert_query.format(*users))
+
+
+a = 21
+
+pek = {a : ([1], [2])}
+
+print(pek)
