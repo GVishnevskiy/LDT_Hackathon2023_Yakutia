@@ -103,7 +103,6 @@ class Database:
         print(q.format(*g))
 
 
-
 class Writer:
     @staticmethod
     def json(data: dict, file_path="groups_discription.txt"):
@@ -111,12 +110,12 @@ class Writer:
             json.dump(data, file, ensure_ascii=False, indent=4)
 
     @staticmethod
-    def db(data: typing.Dict[int, typing.Dict], db: Database):
-        for user_id, user_groups in data.items():
-            db.add_vk_user(int(user_id))
-
-            groups = Writer.clear_groups(user_groups)
-            db.add_vk_groups(groups)
+    # def db(data: typing.Dict[int, typing.Dict], db: Database):
+    #     for user_id, user_groups in data.items():
+    #         db.add_vk_user(int(user_id))
+    #
+    #         groups = Writer.clear_groups(user_groups)
+    #         db.add_vk_groups(groups)
 
     @staticmethod
     def clear_groups(user_groups):
@@ -124,6 +123,7 @@ class Writer:
         for group_id, group_info in user_groups.items():
             g.append((group_id, group_info["name"], group_info["description"]))
         return g
+
 
 class VkParser(AbstractParser):
     def __init__(self, token, login=VK_LOGIN):
@@ -140,6 +140,9 @@ class VkParser(AbstractParser):
     async def _parse_one_person_groups(self, vk_id):
         response = await self.vk.groups.get(user_id=vk_id)
         return response.items
+
+    async def _parse_one_person_notes(self, vk_id):
+        pass
 
     async def _get_groups_description(self, groups_ids: []):
         response = await self.vk.groups.get_by_id(group_ids=groups_ids, fields=["name", "description"])
@@ -163,7 +166,6 @@ async def main():
 
     vk_parser = VkParser(token=TOKEN)
     data = await vk_parser.parse_one(vk_id=MY_VK_ID)
-    Writer.db(data=data, db=db)
 
 
 if __name__ == "__main__":
