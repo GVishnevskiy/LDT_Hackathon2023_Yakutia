@@ -1,9 +1,7 @@
 from abc import ABC, abstractmethod
 from vkbottle import API
-import selenium
 import pprint
 import json
-import sqlite3
 import asyncio
 import typing
 
@@ -11,9 +9,11 @@ from config import VK_LOGIN, VK_PASSWORD
 
 MY_VK_ID = "347307331"
 OUTPUT_PATH = r"../output/"
-TOKEN = "vk1.a.eDiyffPjcbtyqySj_PULS_KtdvjjO1NmM9SRJq4G1r4kVMyQeIcYz72Ub0V1lFkwtZ1wMWv0m-j8mv-RQnzzYOKEB9JcIEwPCALIn3IUI6ft7ubFnaZXNw49byWT0ccN8PXmbu59FQ3_dH6xl9j44uLgoceNWHS5XIXxEQzGDSILTvR2Kf86mu7Qo3OfeRkTkpP3xwtVIUEfnpKEEKTHIw"
+TOKEN = "vk1.a.aSiTJJWP9JyK2YZmPncJ_k0cAmdKNZZRsu6OzXBs7yMxsxFZ-24QIb4astVcRUos7MNser2Nu2wC5mFuu5ARscepK8TI_fmiGpel-dUYd1ePJUcYS_kcig4IR0W7B2KxyXTSyY3rzh399YBTCCW-NYJTRxa_AS16qKZraEisVDDdqhOpJX__l_BUtdbYQWFeW-O5VM4M_ANxT_rNzshJow"
 GROUPS_LIMIT = 2
 NOTES_LIMIT = 2
+KATE_MOBILE = 2685278
+GROUP_ACESS_RIGHTS = 262144
 
 
 class AuthException(Exception):
@@ -28,81 +28,6 @@ class AbstractParser(ABC):
     @abstractmethod
     def parse_one(self, *args, **kwargs):
         ...
-
-
-class DBQueries:
-    add_vk_user = """
-    INSERT INTO 
-        vk_users (id)
-    VALUES 
-        ({0})
-    """
-
-    add_vk_group = """
-    INSERT INTO 
-        vk_groups (id, group_name, group_description)
-    VALUES 
-        {}
-    """
-
-    bind_user_group = """
-    
-    """
-
-
-class Database:
-    def __init__(self, name):
-        self._conn = sqlite3.connect(OUTPUT_PATH + name)
-        self._cursor = self._conn.cursor()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
-
-    @property
-    def connection(self):
-        return self._conn
-
-    @property
-    def cursor(self):
-        return self._cursor
-
-    def commit(self):
-        self.connection.commit()
-
-    def close(self, commit=True):
-        if commit:
-            self.commit()
-        self.connection.close()
-
-    def execute(self, sql, params=None):
-        self.cursor.execute(sql, params or ())
-
-    def fetchall(self):
-        return self.cursor.fetchall()
-
-    def fetchone(self):
-        return self.cursor.fetchone()
-
-    def query(self, sql, params=None):
-        self.cursor.execute(sql, params or ())
-        return self.fetchall()
-
-    def add_vk_user(self, user_id):
-        q = DBQueries.add_vk_user.format(user_id)
-        print(q)
-
-    def add_vk_groups(self, groups):
-        filler = ", ".join(["{}"] * len(groups))
-        q = DBQueries.add_vk_group.format(filler)
-
-        g = []
-        for group_id, group_info in groups.items():
-            g.append((group_id, group_info["name"], group_info["description"]))
-
-        print(q.format(*g))
 
 
 class Writer:
@@ -171,12 +96,26 @@ class VkParser(AbstractParser):
             raise GetUserExeption()
 
 
-async def main():
-    db = Database(name="vk_users.db")
+def get_acess_token():
+    base_url = f"https://oauth.vk.com/authorize?client_id={KATE_MOBILE}"
 
+    url_params = {
+        "redirect_uri": "close.html",
+        "display": "page",
+        "scope": GROUP_ACESS_RIGHTS,
+        "response_type": "token",
+    }
+    param_url = ""
+    for key, value in url_params.items():
+        param_url += f"&{key}={value}"
+
+    return base_url + param_url
+
+
+async def main():
     vk_parser = VkParser(token=TOKEN)
     data = await vk_parser.parse_one(vk_id=MY_VK_ID)
-    print(data)
+    pprint.pprint(data)
 
 
 if __name__ == "__main__":
