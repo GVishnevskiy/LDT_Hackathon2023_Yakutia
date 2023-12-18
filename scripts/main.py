@@ -3,17 +3,12 @@ from vkbottle import API
 import pprint
 import json
 import asyncio
-import typing
 
-from config import VK_LOGIN, VK_PASSWORD
-
-MY_VK_ID = "347307331"
-OUTPUT_PATH = r"../output/"
-TOKEN = "vk1.a.aSiTJJWP9JyK2YZmPncJ_k0cAmdKNZZRsu6OzXBs7yMxsxFZ-24QIb4astVcRUos7MNser2Nu2wC5mFuu5ARscepK8TI_fmiGpel-dUYd1ePJUcYS_kcig4IR0W7B2KxyXTSyY3rzh399YBTCCW-NYJTRxa_AS16qKZraEisVDDdqhOpJX__l_BUtdbYQWFeW-O5VM4M_ANxT_rNzshJow"
-GROUPS_LIMIT = 2
-NOTES_LIMIT = 2
-KATE_MOBILE = 2685278
-GROUP_ACESS_RIGHTS = 262144
+from config import (VK_LOGIN, VK_PASSWORD,
+                    GROUPS_LIMIT, NOTES_LIMIT, GROUP_ACESS_RIGHTS,
+                    KATE_MOBILE,
+                    TEST_TOKEN,
+                    OUTPUT_PATH)
 
 
 class AuthException(Exception):
@@ -37,14 +32,6 @@ class Writer:
             json.dump(data, file, ensure_ascii=False, indent=4)
 
     @staticmethod
-    # def db(data: typing.Dict[int, typing.Dict], db: Database):
-    #     for user_id, user_groups in data.items():
-    #         db.add_vk_user(int(user_id))
-    #
-    #         groups = Writer.clear_groups(user_groups)
-    #         db.add_vk_groups(groups)
-
-    @staticmethod
     def clear_groups(user_groups):
         g = []
         for group_id, group_info in user_groups.items():
@@ -56,7 +43,13 @@ class VkParser(AbstractParser):
     def __init__(self, token, login=VK_LOGIN):
         self.vk = API(token)
 
-    async def parse_one(self, vk_id):
+    async def _get_user_vk_id(self):
+        responce = await self.vk.users.get()
+        vk_id = responce[0].id
+        return vk_id
+
+    async def parse_one(self):
+        vk_id = await self._get_user_vk_id()
         await self._check_if_user_exists(vk_id=vk_id)
 
         user_notes = await self._parse_one_person_notes(vk_id=vk_id)
@@ -96,7 +89,7 @@ class VkParser(AbstractParser):
             raise GetUserExeption()
 
 
-def get_acess_token():
+async def build_url():
     base_url = f"https://oauth.vk.com/authorize?client_id={KATE_MOBILE}"
 
     url_params = {
@@ -112,10 +105,25 @@ def get_acess_token():
     return base_url + param_url
 
 
+async def get_acess_token():
+    url = await build_url()
+    print(url)
+    print("###" * 20)
+    user_token = str(input(
+        "Пожалуйста, скопируйте ссылку и вставьте в браузер.\n"
+        "Скопируйте acess_token и вставьте в консоль. Он получает доступ только к вашей общей"
+        "инофрмации и к вашим группам:\n"))
+
+    return user_token
+
+
 async def main():
-    vk_parser = VkParser(token=TOKEN)
-    data = await vk_parser.parse_one(vk_id=MY_VK_ID)
+    user_token = await get_acess_token()
+    vk_parser = VkParser(token=user_token)
+    data = await vk_parser.parse_one()
+
     pprint.pprint(data)
+    Writer.json(data)
 
 
 if __name__ == "__main__":
