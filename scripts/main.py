@@ -27,16 +27,13 @@ class AbstractParser(ABC):
 
 class Writer:
     @staticmethod
-    def json(data: dict, file_path="groups_discription.txt"):
-        with open(OUTPUT_PATH + file_path, 'a', encoding='utf8') as file:
-            json.dump(data, file, ensure_ascii=False, indent=4)
-
-    @staticmethod
-    def clear_groups(user_groups):
-        g = []
-        for group_id, group_info in user_groups.items():
-            g.append((group_id, group_info["name"], group_info["description"]))
-        return g
+    def json(new_data: dict, file_path="groups_discription.txt"):
+        with open(OUTPUT_PATH + file_path, encoding='utf8') as in_file:
+            data = json.load(in_file)
+            vk_id = list(new_data.keys())[0]
+            data[vk_id] = new_data[vk_id]
+            with open(OUTPUT_PATH + file_path, 'w', encoding='utf8') as out_file:
+                json.dump(data, out_file, ensure_ascii=False, indent=4)
 
 
 class VkParser(AbstractParser):
